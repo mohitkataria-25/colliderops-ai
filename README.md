@@ -2,7 +2,7 @@
 
 ColliderOpsAI is an AI/ML and MLOps project inspired by CERN/LHC-style collider event analysis.
 
-The current version is a working FastAPI-based ML inference service, MLOps workflow, and agentic research assistant. It includes a local PySpark ETL pipeline that writes processed and curated datasets, trains and evaluates baseline models from curated data, tracks training/evaluation runs in MLflow, serves single-event predictions, JSON batch predictions, CSV file-based batch predictions, exports prediction results as CSV, applies confidence-based triage, generates batch-level summary statistics, includes a LangChain-powered RAG assistant over project documentation, and provides a tested LangGraph agent workflow for routing research and prediction requests.
+The current version is a working FastAPI-based ML inference service, MLOps workflow, agentic research assistant, and early real CERN/Open Data ingestion pipeline. It includes a local PySpark ETL pipeline that writes processed and curated datasets, trains and evaluates baseline models from curated data, tracks training/evaluation runs in MLflow, serves single-event predictions, JSON batch predictions, CSV file-based batch predictions, exports prediction results as CSV, applies confidence-based triage, generates batch-level summary statistics, includes a LangChain-powered RAG assistant over project documentation, provides a tested LangGraph agent workflow for routing research and prediction requests, and now includes a real CERN ROOT-file ingestion path that extracts readable event-level features into processed and curated CSV outputs.
 
 The long-term goal is to evolve this into a practical AI-assisted collider analysis workbench with real CERN/Open Data ingestion, batch file uploads, confidence-based triage, model monitoring, LangChain-powered research assistance, LangGraph orchestration, and AWS/PySpark data engineering layers.
 
@@ -43,6 +43,15 @@ Completed:
 - LangGraph agent state, tools, router, nodes, and graph
 - Agent routing tests
 - Agentic workflow smoke tests
+- CERN Open Data record metadata registration
+- CERN ROOT file-location enrichment through `cernopendata-client`
+- Dataset registry at `data/dataset_registry.json`
+- ROOT file inspection with `uproot`
+- CMS Events tree branch probing
+- Readable event-level feature extraction from real CERN ROOT files
+- Real CERN processed CSV output
+- Real CERN curated ML-ready CSV output
+- Real CERN feature-engineering validation mode
 
 Current test status:
 
@@ -476,6 +485,76 @@ Current ETL steps:
 
 ---
 
+## Run Real CERN/Open Data Ingestion
+
+ColliderOpsAI now includes an early real CERN/Open Data ingestion path.
+
+### 1. Search CERN Open Data records
+
+```bash
+python -m etl.search_cern_records
+```
+
+This searches the CERN Open Data Portal, enriches candidate records with file locations through `cernopendata-client`, and identifies processable file formats such as ROOT.
+
+### 2. Register a CERN record
+
+Example using CMS Higgs Monte Carlo record `7901`:
+
+```bash
+python -c "from etl.cern_client import register_cern_record; summary = register_cern_record(record_id='7901'); print(summary['dataset_name']); print(summary['file_count']); print(summary['registry_path'])"
+```
+
+This writes source metadata and ROOT file URLs to:
+
+```text
+data/dataset_registry.json
+```
+
+### 3. Inspect and probe ROOT files
+
+```bash
+python -m etl.adapters.root_adapter
+```
+
+This uses `uproot` to:
+
+- Open a real CERN/CMS ROOT file from URL
+- Inspect top-level ROOT keys
+- Detect the `Events;1` tree
+- List branch previews
+- Probe which branches are readable
+- Extract a small readable event-level feature table
+
+### 4. Run the real CERN ETL job
+
+```bash
+python -m etl.real_cern_etl_job
+```
+
+Current real CERN ETL output:
+
+```text
+data/processed/real_cern_events/events.csv
+data/processed/real_cern_events/run_metadata.json
+data/curated/real_cern_training_dataset/training_dataset.csv
+```
+
+Current extracted real CERN feature columns:
+
+```text
+gen_event_present
+gen_event_weight_count
+gen_event_signal_process_id
+gen_event_qscale
+gen_particles_present
+gen_particle_count
+ak5_genjets_present
+label
+```
+
+Current limitation: The project now includes real CERN/Open Data ROOT ingestion, but the default real CERN output is signal-only and not yet suitable for meaningful binary classifier training.. The feature-engineering layer can validate the dataset schema and numeric features, but binary classifier training is intentionally blocked until a background CERN/Open Data sample is added.
+
 ## Train Models
 
 ```bash
@@ -859,10 +938,12 @@ Planned:
 
 ## Near-Term Next Steps
 
-1. Add one real CERN/Open Data ingestion path end to end
-2. Add dataset registry and source metadata tracking
-3. Add model explainability with feature importance / SHAP
-4. Add an agent API endpoint for LangGraph workflows
-5. Add external CERN/Open Data documentation to RAG
-6. Add AWS Glue/S3 adaptation for the local ETL pipeline
-7. Clean up Pydantic and LangChain deprecation warnings
+1. Find/register a suitable CERN/Open Data background sample
+2. Extend `etl.real_cern_etl_job` to combine signal + background configurations
+3. Train/evaluate a real CERN `dataset_mode="real_cern"` classifier once two classes are available
+4. Add tests for CERN client, ROOT adapter helpers, and real CERN ETL row generation
+5. Add model explainability with feature importance / SHAP
+6. Add an agent API endpoint for LangGraph workflows
+7. Add external CERN/Open Data documentation to RAG
+8. Add AWS Glue/S3 adaptation for the local and real CERN ETL pipelines
+9. Clean up Pydantic and LangChain deprecation warnings
