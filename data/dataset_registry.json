@@ -1,0 +1,330 @@
+[
+  {
+    "dataset_name": "Higgs-to-four-lepton analysis example using 2011-2012 data",
+    "cern_record_id": "5500",
+    "source": "CERN Open Data Portal",
+    "source_url": "https://opendata.cern.ch/record/5500",
+    "doi": "10.7483/OPENDATA.CMS.JKB8.RR42",
+    "license": {
+      "attribution": "GPL-3.0-only"
+    },
+    "experiment": null,
+    "description": null,
+    "keywords": [],
+    "publication_date": null,
+    "retrieved_at": "2026-05-20T17:25:13.484960+00:00",
+    "file_count": 11,
+    "files": [
+      {
+        "file_name": "BuildFile.xml",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/BuildFile.xml",
+        "file_format": "xml",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "HiggsDemoAnalyzer.cc",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/HiggsDemoAnalyzer.cc",
+        "file_format": "cc",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "List_indexfile.txt",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/List_indexfile.txt",
+        "file_format": "txt",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "M4Lnormdatall.cc",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/M4Lnormdatall.cc",
+        "file_format": "cc",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "M4Lnormdatall_lvl3.cc",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/M4Lnormdatall_lvl3.cc",
+        "file_format": "cc",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "demoanalyzer_cfg_level3MC.py",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/demoanalyzer_cfg_level3MC.py",
+        "file_format": "py",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "demoanalyzer_cfg_level3data.py",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/demoanalyzer_cfg_level3data.py",
+        "file_format": "py",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "demoanalyzer_cfg_level4MC.py",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/demoanalyzer_cfg_level4MC.py",
+        "file_format": "py",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "demoanalyzer_cfg_level4data.py",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/demoanalyzer_cfg_level4data.py",
+        "file_format": "py",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "mass4l_combine.pdf",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/mass4l_combine.pdf",
+        "file_format": "pdf",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "mass4l_combine.png",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/software/HiggsExample20112012/mass4l_combine.png",
+        "file_format": "png",
+        "file_size": null,
+        "checksum": null
+      }
+    ],
+    "ingestion_status": "metadata_registered",
+    "notes": [
+      "This registry entry captures CERN Open Data source metadata and file locations.",
+      "Physics data transformation is not performed by cern_client.py.",
+      "Use adapter modules later to convert selected files into processed and curated datasets."
+    ]
+  },
+  {
+    "dataset_name": "/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/Summer12_DR53X-PU_RD1_START53_V7N-v1/AODSIM",
+    "cern_record_id": "7901",
+    "source": "CERN Open Data Portal",
+    "source_url": "https://opendata.cern.ch/record/7901",
+    "doi": "10.7483/OPENDATA.CMS.R2WQ.14EL",
+    "license": {
+      "attribution": "CC0-1.0"
+    },
+    "experiment": null,
+    "description": null,
+    "keywords": [],
+    "publication_date": null,
+    "retrieved_at": "2026-05-20T17:39:42.487895+00:00",
+    "file_count": 29,
+    "files": [
+      {
+        "file_name": "1292747C-2E02-E311-A8FA-00266CF9AFF0.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/1292747C-2E02-E311-A8FA-00266CF9AFF0.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "220E7038-2C02-E311-88B3-008CFA000BB8.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/220E7038-2C02-E311-88B3-008CFA000BB8.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "66801182-8002-E311-ACB7-7845C4FC39F5.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/66801182-8002-E311-ACB7-7845C4FC39F5.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "72E90AA8-2D02-E311-B363-848F69FD24D2.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/72E90AA8-2D02-E311-B363-848F69FD24D2.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "942F9DB9-3002-E311-B75C-848F69FD4FB5.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/942F9DB9-3002-E311-B75C-848F69FD4FB5.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "AAE232EA-2D02-E311-A5D9-001D09FDD7C8.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/AAE232EA-2D02-E311-A5D9-001D09FDD7C8.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "B00533AA-2B02-E311-A26F-00266CFAE318.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/B00533AA-2B02-E311-A26F-00266CFAE318.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "B2A62087-2C02-E311-8937-848F69FD44E4.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/B2A62087-2C02-E311-8937-848F69FD44E4.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "B8B7F564-2B02-E311-9B2E-00A0D1EEE300.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/B8B7F564-2B02-E311-9B2E-00A0D1EEE300.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "D09399D2-2A02-E311-928B-008CFA000BB8.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/D09399D2-2A02-E311-928B-008CFA000BB8.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "D47C610A-2F02-E311-825D-00266CF25998.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/D47C610A-2F02-E311-825D-00266CF25998.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "FC836C29-3002-E311-AA8C-7845C4FC3C23.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/FC836C29-3002-E311-AA8C-7845C4FC3C23.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "2653E833-2E02-E311-9E39-008CFA000B68.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/2653E833-2E02-E311-9E39-008CFA000B68.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "FCE0D950-2F02-E311-86EB-848F69FD2973.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/FCE0D950-2F02-E311-86EB-848F69FD2973.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "2A6198C8-2C02-E311-B8E6-00266CFAE844.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/2A6198C8-2C02-E311-B8E6-00266CFAE844.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "2ECA6FE0-2F02-E311-BE48-7845C4FC39F5.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/2ECA6FE0-2F02-E311-BE48-7845C4FC39F5.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "325566C5-2E02-E311-98D6-180373FF8D42.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/325566C5-2E02-E311-98D6-180373FF8D42.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "40D8535C-2D02-E311-B79E-180373FF8D42.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/40D8535C-2D02-E311-B79E-180373FF8D42.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "4CA6625B-3102-E311-930A-00A0D1EEF364.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/4CA6625B-3102-E311-930A-00A0D1EEF364.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "4E76C802-2A02-E311-A5E3-00266CFAE748.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/4E76C802-2A02-E311-A5E3-00266CFAE748.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "54C9F0F2-2B02-E311-8E6D-7845C4FC39B9.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/10000/54C9F0F2-2B02-E311-8E6D-7845C4FC39B9.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "165AACB8-2F02-E311-AFC4-180373FF94D6.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/165AACB8-2F02-E311-AFC4-180373FF94D6.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "324D1E8A-3202-E311-AA2C-848F69FD4EB9.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/324D1E8A-3202-E311-AA2C-848F69FD4EB9.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "3E6EA72C-2F02-E311-9114-848F69FD43A0.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/3E6EA72C-2F02-E311-9114-848F69FD43A0.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "4022E016-3302-E311-9BCD-180373FF8DE0.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/4022E016-3302-E311-9BCD-180373FF8DE0.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "66FEF198-2E02-E311-A392-7845C4FC378B.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/66FEF198-2E02-E311-A392-7845C4FC378B.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "96E1F895-3002-E311-AEF3-00A0D1EE9424.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/96E1F895-3002-E311-AEF3-00A0D1EE9424.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "AE440A56-7F02-E311-8FE8-848F69FD2940.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/AE440A56-7F02-E311-8FE8-848F69FD2940.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      },
+      {
+        "file_name": "E4A9BB70-3102-E311-AC76-00A0D1EE8D00.root",
+        "file_url": "http://opendata.cern.ch/eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToGG_M-125_8TeV-powheg15-pythia6/AODSIM/PU_RD1_START53_V7N-v1/20000/E4A9BB70-3102-E311-AC76-00A0D1EE8D00.root",
+        "file_format": "root",
+        "file_size": null,
+        "checksum": null
+      }
+    ],
+    "ingestion_status": "metadata_registered",
+    "notes": [
+      "This registry entry captures CERN Open Data source metadata and file locations.",
+      "Physics data transformation is not performed by cern_client.py.",
+      "Use adapter modules later to convert selected files into processed and curated datasets."
+    ]
+  }
+]
