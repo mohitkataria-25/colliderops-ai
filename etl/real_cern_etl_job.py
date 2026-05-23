@@ -1,20 +1,12 @@
-
-
 """Real CERN/Open Data ETL job for ColliderOpsAI.
 
 This script is the first ETL bridge from real CERN Open Data ROOT files into the
 ColliderOpsAI data pipeline.
 
-Current v1 scope:
-- Read one registered CERN Open Data record from data/dataset_registry.json.
-- Extract readable event-level features from selected ROOT files using root_adapter.
-- Write processed event rows to CSV.
-- Write curated ML-ready rows to CSV.
-
-Current limitation:
-- This version supports a signal-only sample from record 7901 by default.
-- A background record should be added later to create a proper binary classifier
-  dataset from real CERN/Open Data.
+Current v2 scope:
+- Combines one signal sample and one background sample by default.
+- Signal default: CMS Higgs-to-gamma-gamma Monte Carlo record 7901.
+- Background default: CMS GJets Monte Carlo record 7779.
 """
 
 from __future__ import annotations
@@ -37,9 +29,18 @@ PROCESSED_OUTPUT_PATH = PROCESSED_OUTPUT_DIR / "events.csv"
 CURATED_OUTPUT_PATH = CURATED_OUTPUT_DIR / "training_dataset.csv"
 RUN_METADATA_PATH = PROCESSED_OUTPUT_DIR / "run_metadata.json"
 
-DEFAULT_RECORD_ID = "7901"
-DEFAULT_LABEL = "signal"
-DEFAULT_FILE_INDEXES = [0]
+DEFAULT_DATASET_CONFIGS = [
+    {
+        "record_id": "7901",
+        "label": "signal",
+        "file_indexes": [0],
+    },
+    {
+        "record_id": "7779",
+        "label": "background",
+        "file_indexes": [0],
+    },
+]
 DEFAULT_MAX_EVENTS_PER_FILE = 100
 
 CURATED_FEATURE_COLUMNS = [
@@ -56,16 +57,16 @@ LABEL_COLUMN = "label"
 
 
 def extract_real_cern_rows(
-    record_id: str = DEFAULT_RECORD_ID,
-    label: str = DEFAULT_LABEL,
-    file_indexes: list[int] | None = None,
+    record_id: str,
+    label: str,
+    file_indexes: list[int],
     max_events_per_file: int = DEFAULT_MAX_EVENTS_PER_FILE,
 ) -> list[dict[str, Any]]:
     """Extract readable event feature rows from registered CERN ROOT files."""
-    selected_file_indexes = file_indexes or DEFAULT_FILE_INDEXES
+
     all_rows: list[dict[str, Any]] = []
 
-    for file_index in selected_file_indexes:
+    for file_index in file_indexes:
         rows = extract_registered_root_event_features(
             record_id=record_id,
             file_index=file_index,
@@ -75,6 +76,34 @@ def extract_real_cern_rows(
 
         for row in rows:
             row["source_file_index"] = file_index
+
+        all_rows.extend(rows)
+
+    return all_rows
+
+
+def extract_real_cern_rows_from_configs(
+    dataset_configs: list[dict[str, Any]] | None = None,
+    max_events_per_file: int = DEFAULT_MAX_EVENTS_PER_FILE,
+) -> list[dict[str, Any]]:
+    """Extract readable event feature rows from multiple CERN dataset configs."""
+    selected_configs = dataset_configs or DEFAULT_DATASET_CONFIGS
+    all_rows: list[dict[str, Any]] = []
+
+    for config in selected_configs:
+        record_id = str(config["record_id"])
+        label = str(config["label"])
+        file_indexes = config.get("file_indexes", [0])
+
+        rows = extract_real_cern_rows(
+            record_id=record_id,
+            label=label,
+            file_indexes=file_indexes,
+            max_events_per_file=max_events_per_file,
+        )
+
+        for row in rows:
+            row["dataset_label"] = label
 
         all_rows.extend(rows)
 
@@ -117,20 +146,23 @@ def write_rows_to_csv(rows: list[dict[str, Any]], output_path: Path) -> Path:
 def write_run_metadata(
     processed_rows: list[dict[str, Any]],
     curated_rows: list[dict[str, Any]],
-    record_id: str,
-    label: str,
-    file_indexes: list[int],
+    dataset_configs: list[dict[str, Any]],
     max_events_per_file: int,
 ) -> Path:
     """Write ETL run metadata for reproducibility."""
     RUN_METADATA_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+    label_counts: dict[str, int] = {}
+    for row in curated_rows:
+        label = str(row.get(LABEL_COLUMN))
+        label_counts[label] = label_counts.get(label, 0) + 1
+
     metadata = {
         "job_name": "real_cern_etl_job",
         "status": "success",
-        "record_id": str(record_id),
-        "label": label,
-        "file_indexes": file_indexes,
+        "dataset_configs": dataset_configs,
+        "label_counts": label_counts,
+        "two_class_training_ready": len(label_counts) >= 2,
         "max_events_per_file": max_events_per_file,
         "processed_output_path": str(PROCESSED_OUTPUT_PATH),
         "curated_output_path": str(CURATED_OUTPUT_PATH),
@@ -141,8 +173,8 @@ def write_run_metadata(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "notes": [
             "This ETL job extracts a small readable subset from real CERN/CMS ROOT files.",
-            "Current v1 output is signal-only by default because a matching background record has not yet been wired.",
-            "The curated dataset is suitable for pipeline testing, but not yet for meaningful binary classification training.",
+            "Default v2 output combines signal record 7901 and background record 7779.",
+            "This is a first real CERN/Open Data binary dataset and should still be treated as a prototype feature set.",
         ],
     }
 
@@ -153,21 +185,22 @@ def write_run_metadata(
 
 
 def run_real_cern_etl(
-    record_id: str = DEFAULT_RECORD_ID,
-    label: str = DEFAULT_LABEL,
-    file_indexes: list[int] | None = None,
+    dataset_configs: list[dict[str, Any]] | None = None,
     max_events_per_file: int = DEFAULT_MAX_EVENTS_PER_FILE,
 ) -> dict[str, Any]:
     """Run the real CERN/Open Data ETL job."""
-    selected_file_indexes = file_indexes or DEFAULT_FILE_INDEXES
+    selected_configs = dataset_configs or DEFAULT_DATASET_CONFIGS
 
-    processed_rows = extract_real_cern_rows(
-        record_id=record_id,
-        label=label,
-        file_indexes=selected_file_indexes,
+    processed_rows = extract_real_cern_rows_from_configs(
+        dataset_configs=selected_configs,
         max_events_per_file=max_events_per_file,
     )
     curated_rows = build_curated_rows(processed_rows=processed_rows)
+
+    label_counts: dict[str, int] = {}
+    for row in curated_rows:
+        label = str(row.get(LABEL_COLUMN))
+        label_counts[label] = label_counts.get(label, 0) + 1
 
     processed_path = write_rows_to_csv(
         rows=processed_rows,
@@ -180,18 +213,16 @@ def run_real_cern_etl(
     metadata_path = write_run_metadata(
         processed_rows=processed_rows,
         curated_rows=curated_rows,
-        record_id=record_id,
-        label=label,
-        file_indexes=selected_file_indexes,
+        dataset_configs=selected_configs,
         max_events_per_file=max_events_per_file,
     )
 
     return {
         "job_name": "real_cern_etl_job",
         "status": "success",
-        "record_id": str(record_id),
-        "label": label,
-        "file_indexes": selected_file_indexes,
+        "dataset_configs": selected_configs,
+        "label_counts": label_counts,
+        "two_class_training_ready": len(label_counts) >= 2,
         "max_events_per_file": max_events_per_file,
         "processed_row_count": len(processed_rows),
         "curated_row_count": len(curated_rows),
@@ -206,9 +237,9 @@ def print_etl_summary(summary: dict[str, Any]) -> None:
     print("-" * 80)
     print(f"Job: {summary.get('job_name')}")
     print(f"Status: {summary.get('status')}")
-    print(f"Record ID: {summary.get('record_id')}")
-    print(f"Label: {summary.get('label')}")
-    print(f"File indexes: {summary.get('file_indexes')}")
+    print(f"Dataset configs: {summary.get('dataset_configs')}")
+    print(f"Label counts: {summary.get('label_counts')}")
+    print(f"Two-class training ready: {summary.get('two_class_training_ready')}")
     print(f"Max events per file: {summary.get('max_events_per_file')}")
     print(f"Processed rows: {summary.get('processed_row_count')}")
     print(f"Curated rows: {summary.get('curated_row_count')}")
