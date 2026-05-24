@@ -447,6 +447,58 @@ def _safe_len(value: Any) -> int | None:
         return None
 
 
+def _to_float_list(value: Any) -> list[float]:
+    """Convert a list-like awkward/numpy/Python value into a list of floats."""
+    if value is None:
+        return []
+
+    python_value = _to_python_scalar(value)
+
+    if python_value is None:
+        return []
+
+    if not isinstance(python_value, list):
+        python_value = [python_value]
+
+    float_values: list[float] = []
+
+    for item in python_value:
+        try:
+            converted_item = float(item)
+            if not math.isnan(converted_item):
+                float_values.append(converted_item)
+        except Exception:
+            continue
+
+    return float_values
+
+
+def _numeric_summary(values: list[float], prefix: str) -> dict[str, Any]:
+    """Return basic non-leaky summary statistics for a numeric list."""
+    if not values:
+        return {
+            f"{prefix}_min": None,
+            f"{prefix}_max": None,
+            f"{prefix}_mean": None,
+            f"{prefix}_std": None,
+            f"{prefix}_sum": None,
+            f"{prefix}_unique_count": 0,
+        }
+
+    count = len(values)
+    mean = sum(values) / count
+    variance = sum((value - mean) ** 2 for value in values) / count
+
+    return {
+        f"{prefix}_min": min(values),
+        f"{prefix}_max": max(values),
+        f"{prefix}_mean": mean,
+        f"{prefix}_std": math.sqrt(variance),
+        f"{prefix}_sum": sum(values),
+        f"{prefix}_unique_count": len(set(values)),
+    }
+
+
 def _extract_optional_field(record: Any, field_name: str) -> Any:
     """Extract a field from an awkward record when available."""
     try:
@@ -470,6 +522,7 @@ def extract_readable_event_features(
     This function intentionally extracts only branches already proven readable by the
     branch probe. It does not attempt to deserialize complex CMS EDM objects such as
     reco::GenJet collections.
+    `gen_event_signal_process_id` is retained for traceability but excluded from curated model features because it is leakage-prone.
     """
     ensure_uproot_available()
 
@@ -513,10 +566,24 @@ def extract_readable_event_features(
                 if alias.endswith("_present"):
                     row[alias] = bool(_to_python_scalar(value))
                 elif alias == "gen_particles_obj":
-                    row["gen_particle_count"] = _safe_len(value)
+                    particle_values = _to_float_list(value)
+                    row["gen_particle_count"] = len(particle_values)
+                    row.update(
+                        _numeric_summary(
+                            values=particle_values,
+                            prefix="gen_particle_id",
+                        )
+                    )
                 elif alias == "gen_event_obj":
-                    row["gen_event_weight_count"] = _safe_len(
+                    weights = _to_float_list(
                         _extract_optional_field(value, "weights_")
+                    )
+                    row["gen_event_weight_count"] = len(weights)
+                    row.update(
+                        _numeric_summary(
+                            values=weights,
+                            prefix="gen_event_weight",
+                        )
                     )
                     row["gen_event_signal_process_id"] = _extract_optional_field(
                         value, "signalProcessID_"

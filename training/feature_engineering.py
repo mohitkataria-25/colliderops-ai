@@ -28,10 +28,21 @@ SAMPLE_FEATURE_COLUMNS = [
 REAL_CERN_FEATURE_COLUMNS = [
     "gen_event_present",
     "gen_event_weight_count",
-    "gen_event_signal_process_id",
+    "gen_event_weight_min",
+    "gen_event_weight_max",
+    "gen_event_weight_mean",
+    "gen_event_weight_std",
+    "gen_event_weight_sum",
+    "gen_event_weight_unique_count",
     "gen_event_qscale",
     "gen_particles_present",
     "gen_particle_count",
+    "gen_particle_id_min",
+    "gen_particle_id_max",
+    "gen_particle_id_mean",
+    "gen_particle_id_std",
+    "gen_particle_id_sum",
+    "gen_particle_id_unique_count",
     "ak5_genjets_present",
 ]
 
@@ -41,6 +52,9 @@ BOOLEAN_FEATURE_COLUMNS = [
     "ak5_genjets_present",
 ]
 
+LEAKAGE_PRONE_COLUMNS = [
+    "gen_event_signal_process_id",
+]
 
 def read_curated_training_data(dataset_mode: str = DEFAULT_DATASET_MODE) -> pd.DataFrame:
     """Read curated training data for the selected dataset mode."""
@@ -87,12 +101,21 @@ def get_feature_columns(dataset_mode: str = DEFAULT_DATASET_MODE) -> list[str]:
         f"Unsupported dataset_mode={dataset_mode}. "
         "Supported values: sample_collider, real_cern"
     )
+def validate_no_leakage_column_use(feature_column:list[str])->None:
 
+    leakage_columns_used = sorted(set(feature_column) & set(LEAKAGE_PRONE_COLUMNS))
+    if leakage_columns_used:
+        raise ValueError(
+            f"Potential leakeage columns found in feature set: {leakage_columns_used}"
+            "Remove this from model training feature"
+        )
 
 def validate_required_columns(df: pd.DataFrame, feature_columns: list[str]) -> None:
     """Validate that all required feature and label columns exist."""
     required_columns = set(feature_columns + ["label"])
     missing_columns = sorted(required_columns - set(df.columns))
+
+    validate_no_leakage_column_use(feature_column=feature_columns)
 
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
@@ -161,7 +184,7 @@ def split_features_and_label(
     """Split curated data into train/test feature and label sets."""
     feature_columns = get_feature_columns(dataset_mode=dataset_mode)
     validate_required_columns(df=df, feature_columns=feature_columns)
-
+    validate_no_leakage_column_use(feature_column=feature_columns)
     x = normalize_features(df=df, feature_columns=feature_columns)
 
     label_mapping = {
