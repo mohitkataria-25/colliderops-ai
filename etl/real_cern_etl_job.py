@@ -38,37 +38,23 @@ DEFAULT_DATASET_CONFIGS = [
     {
         "record_id": "7901",
         "label": "signal",
-        "file_indexes": [0, 1],
+        "target_usable_file_count": 5,
+        "candidate_scan_limit": 25,
     },
     {
         "record_id": "7779",
         "label": "background",
-        "file_indexes": [0, 1],
+        "target_usable_file_count": 5,
+        "candidate_scan_limit": 25,
     },
 ]
-DEFAULT_MAX_EVENTS_PER_FILE = 1000
+DEFAULT_MAX_EVENTS_PER_FILE = 2000
 FALLBACK_MAX_EVENTS_PER_FILE = [1000, 500, 100]
 REMOTE_READ_RETRY_SLEEP_SECONDS = 10
 
 CURATED_FEATURE_COLUMNS = [
-    "gen_event_present",
-    "gen_event_weight_count",
-    "gen_event_weight_min",
-    "gen_event_weight_max",
-    "gen_event_weight_mean",
-    "gen_event_weight_std",
-    "gen_event_weight_sum",
-    "gen_event_weight_unique_count",
     "gen_event_qscale",
-    "gen_particles_present",
     "gen_particle_count",
-    "gen_particle_id_min",
-    "gen_particle_id_max",
-    "gen_particle_id_mean",
-    "gen_particle_id_std",
-    "gen_particle_id_sum",
-    "gen_particle_id_unique_count",
-    "ak5_genjets_present",
 ]
 
 
@@ -115,6 +101,70 @@ def get_or_download_root_file(record_id: str, file_index: int) -> Path:
         raise
 
     return local_path
+
+
+def discover_usable_root_file_indexes(
+    record_id: str,
+    label: str,
+    target_count: int,
+    candidate_scan_limit: int,
+    validation_event_limit: int = 5,
+) -> list[int]:
+    """Find usable ROOT file indexes for one CERN record.
+
+    Some CERN Open Data registry file URLs may be unavailable, stale, rate-limited,
+    or unreadable by the current lightweight uproot adapter. This helper scans
+    candidate file indexes, caches files locally when possible, validates a tiny
+    event extraction sample, and returns the first usable indexes.
+    """
+    usable_file_indexes: list[int] = []
+
+    for file_index in range(candidate_scan_limit):
+        if len(usable_file_indexes) >= target_count:
+            break
+
+        try:
+            local_root_file_path = get_or_download_root_file(
+                record_id=record_id,
+                file_index=file_index,
+            )
+
+            validation_rows = extract_readable_event_features(
+                file_path_or_url=str(local_root_file_path),
+                record_id=record_id,
+                label=label,
+                max_events=validation_event_limit,
+            )
+
+            if validation_rows:
+                usable_file_indexes.append(file_index)
+                print(
+                    "Usable ROOT file discovered: "
+                    f"record_id={record_id}, label={label}, "
+                    f"file_index={file_index}, usable_count={len(usable_file_indexes)}"
+                )
+            else:
+                print(
+                    "Warning: ROOT file produced zero validation rows. "
+                    f"record_id={record_id}, label={label}, file_index={file_index}"
+                )
+
+        except Exception as discovery_error:
+            print(
+                "Warning: ROOT file candidate is not usable. "
+                f"record_id={record_id}, label={label}, file_index={file_index}, "
+                f"error={discovery_error}"
+            )
+            time.sleep(REMOTE_READ_RETRY_SLEEP_SECONDS)
+
+    if len(usable_file_indexes) < target_count:
+        print(
+            "Warning: fewer usable ROOT files discovered than requested. "
+            f"record_id={record_id}, label={label}, requested={target_count}, "
+            f"usable={len(usable_file_indexes)}"
+        )
+
+    return usable_file_indexes
 
 
 def extract_file_rows_with_fallback(
@@ -213,12 +263,47 @@ def extract_real_cern_rows(
     return all_rows
 
 
+def resolve_dataset_configs(
+    dataset_configs: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Resolve dataset configs into explicit usable file indexes."""
+    selected_configs = dataset_configs or DEFAULT_DATASET_CONFIGS
+    resolved_configs: list[dict[str, Any]] = []
+
+    for config in selected_configs:
+        record_id = str(config["record_id"])
+        label = str(config["label"])
+
+        if "file_indexes" in config:
+            file_indexes = config.get("file_indexes", [0])
+        else:
+            target_usable_file_count = int(config.get("target_usable_file_count", 1))
+            candidate_scan_limit = int(config.get("candidate_scan_limit", 10))
+            file_indexes = discover_usable_root_file_indexes(
+                record_id=record_id,
+                label=label,
+                target_count=target_usable_file_count,
+                candidate_scan_limit=candidate_scan_limit,
+            )
+
+        resolved_config = {
+            **config,
+            "record_id": record_id,
+            "label": label,
+            "file_indexes": file_indexes,
+            "resolved_file_count": len(file_indexes),
+        }
+        resolved_configs.append(resolved_config)
+
+    return resolved_configs
+
+
 def extract_real_cern_rows_from_configs(
     dataset_configs: list[dict[str, Any]] | None = None,
     max_events_per_file: int = DEFAULT_MAX_EVENTS_PER_FILE,
 ) -> list[dict[str, Any]]:
     """Extract readable event feature rows from multiple CERN dataset configs."""
-    selected_configs = dataset_configs or DEFAULT_DATASET_CONFIGS
+    selected_configs = resolve_dataset_configs(dataset_configs=dataset_configs)
     all_rows: list[dict[str, Any]] = []
 
     for config in selected_configs:
@@ -308,6 +393,7 @@ def write_run_metadata(
             "This is a first real CERN/Open Data binary dataset and should still be treated as a prototype feature set.",
             "Scaled ETL uses per-file fallback extraction to handle intermittent remote ROOT read failures.",
             "Scaled ETL caches CERN ROOT files locally under data/raw/cern_root before extraction.",
+            "Dataset configs can auto-discover usable ROOT file indexes before extraction.",
         ],
     }
 
@@ -322,7 +408,7 @@ def run_real_cern_etl(
     max_events_per_file: int = DEFAULT_MAX_EVENTS_PER_FILE,
 ) -> dict[str, Any]:
     """Run the real CERN/Open Data ETL job."""
-    selected_configs = dataset_configs or DEFAULT_DATASET_CONFIGS
+    selected_configs = resolve_dataset_configs(dataset_configs=dataset_configs)
 
     processed_rows = extract_real_cern_rows_from_configs(
         dataset_configs=selected_configs,

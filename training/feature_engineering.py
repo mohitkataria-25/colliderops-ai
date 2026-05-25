@@ -17,6 +17,9 @@ SAMPLE_CURATED_DATA_PATH = SAMPLE_CURATED_DATA_DIR / "*.parquet"
 REAL_CERN_CURATED_DATA_DIR = PARENT_DIR / "data" / "curated" / "real_cern_training_dataset"
 REAL_CERN_CURATED_DATA_PATH = REAL_CERN_CURATED_DATA_DIR / "training_dataset.csv"
 
+CURATED_HIGGS_CURATED_DATA_DIR = PARENT_DIR / "data" / "curated" / "curated_higgs_training_dataset"
+CURATED_HIGGS_CURATED_DATA_PATH = CURATED_HIGGS_CURATED_DATA_DIR / "training_dataset.csv"
+
 SAMPLE_FEATURE_COLUMNS = [
     "DER_mass_MMC",
     "DER_mass_transverse_met_lep",
@@ -26,24 +29,39 @@ SAMPLE_FEATURE_COLUMNS = [
 ]
 
 REAL_CERN_FEATURE_COLUMNS = [
-    "gen_event_present",
-    "gen_event_weight_count",
-    "gen_event_weight_min",
-    "gen_event_weight_max",
-    "gen_event_weight_mean",
-    "gen_event_weight_std",
-    "gen_event_weight_sum",
-    "gen_event_weight_unique_count",
     "gen_event_qscale",
-    "gen_particles_present",
     "gen_particle_count",
-    "gen_particle_id_min",
-    "gen_particle_id_max",
-    "gen_particle_id_mean",
-    "gen_particle_id_std",
-    "gen_particle_id_sum",
-    "gen_particle_id_unique_count",
-    "ak5_genjets_present",
+]
+
+CURATED_HIGGS_FEATURE_COLUMNS = [
+    "lepton_pT",
+    "lepton_eta",
+    "lepton_phi",
+    "missing_energy_magnitude",
+    "missing_energy_phi",
+    "jet_1_pt",
+    "jet_1_eta",
+    "jet_1_phi",
+    "jet_1_b_tag",
+    "jet_2_pt",
+    "jet_2_eta",
+    "jet_2_phi",
+    "jet_2_b_tag",
+    "jet_3_pt",
+    "jet_3_eta",
+    "jet_3_phi",
+    "jet_3_b_tag",
+    "jet_4_pt",
+    "jet_4_eta",
+    "jet_4_phi",
+    "jet_4_b_tag",
+    "m_jj",
+    "m_jjj",
+    "m_lv",
+    "m_jlv",
+    "m_bb",
+    "m_wbb",
+    "m_wwbb",
 ]
 
 BOOLEAN_FEATURE_COLUMNS = [
@@ -80,9 +98,20 @@ def read_curated_training_data(dataset_mode: str = DEFAULT_DATASET_MODE) -> pd.D
                 "Run python -m etl.real_cern_etl_job first."
             )
 
+        if dataset_mode == "curated_higgs":
+            if CURATED_HIGGS_CURATED_DATA_PATH.exists():
+                df = pd.read_csv(CURATED_HIGGS_CURATED_DATA_PATH)
+                print("Curated HIGGS training data extracted successfully.")
+                return df
+
+            raise ValueError(
+                f"Curated HIGGS training data not available at {CURATED_HIGGS_CURATED_DATA_PATH}. "
+                "Run python -m etl.download_curated_higgs_dataset first."
+            )
+
         raise ValueError(
             f"Unsupported dataset_mode={dataset_mode}. "
-            "Supported values: sample_collider, real_cern"
+            "Supported values: sample_collider, real_cern, curated_higgs"
         )
 
     except Exception as e:
@@ -97,17 +126,19 @@ def get_feature_columns(dataset_mode: str = DEFAULT_DATASET_MODE) -> list[str]:
     if dataset_mode == "real_cern":
         return REAL_CERN_FEATURE_COLUMNS
 
+    if dataset_mode == "curated_higgs":
+        return CURATED_HIGGS_FEATURE_COLUMNS
+
     raise ValueError(
         f"Unsupported dataset_mode={dataset_mode}. "
-        "Supported values: sample_collider, real_cern"
+        "Supported values: sample_collider, real_cern, curated_higgs"
     )
-def validate_no_leakage_column_use(feature_column:list[str])->None:
-
-    leakage_columns_used = sorted(set(feature_column) & set(LEAKAGE_PRONE_COLUMNS))
+def validate_no_leakage_column_use(feature_columns: list[str]) -> None:
+    leakage_columns_used = sorted(set(feature_columns) & set(LEAKAGE_PRONE_COLUMNS))
     if leakage_columns_used:
         raise ValueError(
-            f"Potential leakeage columns found in feature set: {leakage_columns_used}"
-            "Remove this from model training feature"
+            f"Potential leakage columns found in feature set: {leakage_columns_used}. "
+            "Remove these from model training features."
         )
 
 def validate_required_columns(df: pd.DataFrame, feature_columns: list[str]) -> None:
@@ -115,7 +146,7 @@ def validate_required_columns(df: pd.DataFrame, feature_columns: list[str]) -> N
     required_columns = set(feature_columns + ["label"])
     missing_columns = sorted(required_columns - set(df.columns))
 
-    validate_no_leakage_column_use(feature_column=feature_columns)
+    validate_no_leakage_column_use(feature_columns=feature_columns)
 
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
@@ -184,7 +215,7 @@ def split_features_and_label(
     """Split curated data into train/test feature and label sets."""
     feature_columns = get_feature_columns(dataset_mode=dataset_mode)
     validate_required_columns(df=df, feature_columns=feature_columns)
-    validate_no_leakage_column_use(feature_column=feature_columns)
+    validate_no_leakage_column_use(feature_columns=feature_columns)
     x = normalize_features(df=df, feature_columns=feature_columns)
 
     label_mapping = {
@@ -201,7 +232,7 @@ def split_features_and_label(
         raise ValueError(
             "Training requires at least two label classes. "
             "The current dataset appears to contain only one class. "
-            "For real_cern mode, add a background record before training a binary classifier."
+            "For real_cern or curated_higgs mode, ensure both signal and background rows are present."
         )
 
     x_train, x_test, y_train, y_test = train_test_split(

@@ -1,4 +1,3 @@
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 import argparse
 from datetime import datetime
@@ -26,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset-mode",
         default=DEFAULT_DATASET_MODE,
-        choices=["sample_collider", "real_cern"],
+        choices=["sample_collider", "real_cern", "curated_higgs"],
         help="Choose which curated dataset to evaluate on.",
     )
 
@@ -41,9 +40,12 @@ def resolve_evaluation_data_path(dataset_mode: str) -> Path:
     if dataset_mode == "real_cern":
         return feature_engineering.REAL_CERN_CURATED_DATA_PATH
 
+    if dataset_mode == "curated_higgs":
+        return feature_engineering.CURATED_HIGGS_CURATED_DATA_PATH
+
     raise ValueError(
         f"Unsupported dataset_mode={dataset_mode}. "
-        "Supported values: sample_collider, real_cern"
+        "Supported values: sample_collider, real_cern, curated_higgs"
     )
 
 

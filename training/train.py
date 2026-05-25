@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset-mode",
         default=DEFAULT_DATASET_MODE,
-        choices=["sample_collider", "real_cern"],
+        choices=["sample_collider", "real_cern", "curated_higgs"],
         help="Choose which curated dataset to train on.",
     )
 
@@ -41,9 +41,12 @@ def resolve_training_data_path(dataset_mode: str) -> Path:
     if dataset_mode == "real_cern":
         return feature_engineering.REAL_CERN_CURATED_DATA_PATH
 
+    if dataset_mode == "curated_higgs":
+        return feature_engineering.CURATED_HIGGS_CURATED_DATA_PATH
+
     raise ValueError(
         f"Unsupported dataset_mode={dataset_mode}. "
-        "Supported values: sample_collider, real_cern"
+        "Supported values: sample_collider, real_cern, curated_higgs"
     )
 
 
@@ -74,7 +77,10 @@ def load_training_data(
         raise
 
 
-def train_logistic_regression(x_train: pd.DataFrame, y_train: pd.Series) -> LogisticRegression:
+def train_logistic_regression(
+    x_train: pd.DataFrame,
+    y_train: pd.Series,
+) -> LogisticRegression:
     """Train a Logistic Regression baseline model."""
     print("Starting training for Logistic Regression")
 
@@ -154,7 +160,7 @@ def log_training_metadata(
             "leakage_prone_columns_excluded": ",".join(
                 feature_engineering.LEAKAGE_PRONE_COLUMNS
             ),
-            "leakage_policy":"Excluded process identifies from model feature set."
+            "leakage_policy": "Excluded process identifiers from model feature set.",
         }
     )
 
@@ -176,8 +182,6 @@ def main() -> None:
     with logs.start_training_run(
         run_name=f"training_baseline_models_{dataset_mode}",
     ):
-        
-
         log_training_metadata(
             dataset_mode=dataset_mode,
             training_data_path=training_data_path,

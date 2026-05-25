@@ -36,6 +36,20 @@ DEFAULT_BRANCH_PATTERNS = [
     "genParticles",
 ]
 
+# Rich feature candidate patterns for branch classification
+RICH_FEATURE_CANDIDATE_PATTERNS = {
+    "photon": ["Photon", "photon", "gedPhoton", "recoPhoton"],
+    "electron": ["Electron", "electron", "GsfElectron", "gedGsfElectron"],
+    "muon": ["Muon", "muon"],
+    "jet": ["Jet", "jet", "GenJet", "PFJet", "ak5", "ak7"],
+    "met": ["MET", "met", "MissingET", "CaloMET", "PFMET"],
+    "gen_particle": ["GenParticle", "genParticle", "GenPart", "genParticles"],
+    "kinematics": ["pt", "eta", "phi", "mass", "energy", "momentum"],
+    "trigger": ["Trigger", "trigger", "HLT", "L1"],
+    "lhe": ["LHE", "lhe"],
+    "event_info": ["Event", "Run", "Luminosity", "Pileup", "Vertex", "rho"],
+}
+
 READABLE_EVENT_BRANCHES = {
     "gen_event_present": "GenEventInfoProduct_generator__SIM./GenEventInfoProduct_generator__SIM.present",
     "gen_event_obj": "GenEventInfoProduct_generator__SIM./GenEventInfoProduct_generator__SIM.obj",
@@ -383,6 +397,142 @@ def probe_registered_event_branch_extraction(
     )
 
 
+
+# ---- Rich feature branch candidate utilities ----
+
+def classify_branch_candidate(
+    branch_name: str,
+    candidate_patterns: dict[str, list[str]] | None = None,
+) -> list[str]:
+    """Classify a branch into one or more candidate feature groups."""
+    selected_patterns = candidate_patterns or RICH_FEATURE_CANDIDATE_PATTERNS
+    matched_groups: list[str] = []
+
+    for group_name, patterns in selected_patterns.items():
+        if any(pattern in branch_name for pattern in patterns):
+            matched_groups.append(group_name)
+
+    return matched_groups
+
+
+def discover_rich_feature_branch_candidates(
+    file_path_or_url: str,
+    record_id: str = DEFAULT_RECORD_ID,
+    label: str | None = None,
+    file_index: int | None = None,
+    tree_name: str = DEFAULT_TREE_NAME,
+    candidate_patterns: dict[str, list[str]] | None = None,
+    sample_rows: int = DEFAULT_SAMPLE_ROWS,
+    max_candidates: int | None = 250,
+) -> list[dict[str, Any]]:
+    """Discover richer readable branch candidates from a ROOT tree.
+
+    This does not add branches to the training feature set. It creates a report of
+    candidate branches, grouped by physics-style keywords, and tests whether a
+    tiny sample can be read with uproot.
+    """
+    branches = list_tree_branches(
+        file_path_or_url=file_path_or_url,
+        tree_name=tree_name,
+    )
+
+    candidate_rows: list[dict[str, Any]] = []
+
+    for branch_name in branches:
+        matched_groups = classify_branch_candidate(
+            branch_name=branch_name,
+            candidate_patterns=candidate_patterns,
+        )
+
+        if not matched_groups:
+            continue
+
+        sample = sample_event_branch(
+            file_path_or_url=file_path_or_url,
+            branch_name=branch_name,
+            tree_name=tree_name,
+            sample_rows=sample_rows,
+        )
+
+        candidate_rows.append(
+            {
+                "record_id": str(record_id),
+                "label": label,
+                "file_index": file_index,
+                "file_path_or_url": file_path_or_url,
+                "tree_name": tree_name,
+                "branch_name": branch_name,
+                "candidate_groups": ",".join(matched_groups),
+                "status": sample.get("status"),
+                "sample_type": sample.get("sample_type"),
+                "sample_preview": sample.get("sample_preview"),
+                "error": sample.get("error"),
+            }
+        )
+
+        if max_candidates is not None and len(candidate_rows) >= max_candidates:
+            break
+
+    return candidate_rows
+
+
+def discover_registered_rich_feature_branch_candidates(
+    record_id: str = DEFAULT_RECORD_ID,
+    label: str | None = None,
+    file_index: int = DEFAULT_FILE_INDEX,
+    tree_name: str = DEFAULT_TREE_NAME,
+    candidate_patterns: dict[str, list[str]] | None = None,
+    sample_rows: int = DEFAULT_SAMPLE_ROWS,
+    max_candidates: int | None = 250,
+) -> list[dict[str, Any]]:
+    """Discover richer branch candidates from a registered CERN ROOT file URL."""
+    file_url = get_root_file_url(
+        record_id=record_id,
+        file_index=file_index,
+    )
+
+    return discover_rich_feature_branch_candidates(
+        file_path_or_url=file_url,
+        record_id=record_id,
+        label=label,
+        file_index=file_index,
+        tree_name=tree_name,
+        candidate_patterns=candidate_patterns,
+        sample_rows=sample_rows,
+        max_candidates=max_candidates,
+    )
+
+
+def print_rich_feature_candidate_summary(
+    candidate_rows: list[dict[str, Any]],
+    max_rows: int = 25,
+) -> None:
+    """Print a compact summary of rich feature branch candidates."""
+    print("-" * 80)
+    print(f"Rich feature branch candidates: {len(candidate_rows)}")
+
+    if not candidate_rows:
+        print("No rich feature candidates found.")
+        return
+
+    success_count = sum(1 for row in candidate_rows if row.get("status") == "success")
+    failed_count = sum(1 for row in candidate_rows if row.get("status") == "error")
+    print(f"Readable candidates: {success_count}")
+    print(f"Failed candidates: {failed_count}")
+
+    print("Candidates preview:")
+    for row in candidate_rows[:max_rows]:
+        print(f"  - Branch: {row.get('branch_name')}")
+        print(f"    Groups: {row.get('candidate_groups')}")
+        print(f"    Status: {row.get('status')}")
+        if row.get("sample_type"):
+            print(f"    Sample type: {row.get('sample_type')}")
+        if row.get("sample_preview"):
+            print(f"    Sample preview: {row.get('sample_preview')}")
+        if row.get("error"):
+            print(f"    Error: {row.get('error')}")
+
+
 def print_branch_probe_summary(summary: dict[str, Any]) -> None:
     """Print branch-level extraction probe results."""
     print("-" * 80)
@@ -698,6 +848,14 @@ def main() -> None:
         max_events=10,
     )
     print_extracted_feature_summary(rows=extracted_rows)
+
+    candidate_rows = discover_registered_rich_feature_branch_candidates(
+        record_id=DEFAULT_RECORD_ID,
+        label="signal",
+        file_index=DEFAULT_FILE_INDEX,
+        max_candidates=25,
+    )
+    print_rich_feature_candidate_summary(candidate_rows=candidate_rows)
 
 
 if __name__ == "__main__":
