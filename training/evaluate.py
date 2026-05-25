@@ -17,13 +17,15 @@ from sklearn.metrics import (
 from sklearn.inspection import permutation_importance
 from training import feature_engineering
 from training import logs
+from config.settings import get_settings
 
+settings = get_settings()
 
-PARENT_DIR = Path(__file__).resolve().parents[1]
-MODEL_DIR = PARENT_DIR / "models"
-METRICS_DIR = PARENT_DIR / "evaluation_metrics"
-DEFAULT_DATASET_MODE = "sample_collider"
-EVALUATION_REPORTS_DIR = PARENT_DIR / "evaluation_reports"
+MODEL_DIR = settings.models_dir
+METRICS_DIR = settings.evaluation_metrics_dir
+DEFAULT_DATASET_MODE = settings.dataset_mode
+EVALUATION_REPORTS_DIR = settings.evaluation_reports_dir
+
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""

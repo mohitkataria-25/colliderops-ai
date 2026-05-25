@@ -1,0 +1,408 @@
+
+
+{
+  "Comment": "ColliderOpsAI AWS Step Functions orchestration skeleton for dataset ingestion, ETL, training, evaluation, model registration, and notification.",
+  "StartAt": "ValidatePipelineRequest",
+  "States": {
+    "ValidatePipelineRequest": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ValidatePipelineRequestLambdaArn}",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.validate_pipeline_request_result",
+      "Next": "ValidateDatasetMetadata",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "ValidateDatasetMetadata": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ValidateDatasetMetadataLambdaArn}",
+        "Payload": {
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix",
+          "total_rows.$": "$.total_rows"
+        }
+      },
+      "ResultPath": "$.validate_dataset_metadata_result",
+      "Next": "ChooseDatasetMode",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "ChooseDatasetMode": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.dataset_mode",
+          "StringEquals": "curated_higgs",
+          "Next": "RunCuratedHiggsGlueETL"
+        },
+        {
+          "Variable": "$.dataset_mode",
+          "StringEquals": "real_cern",
+          "Next": "RunRealCernExtractionTask"
+        },
+        {
+          "Variable": "$.dataset_mode",
+          "StringEquals": "sample_collider",
+          "Next": "RunTrainingTask"
+        }
+      ],
+      "Default": "UnsupportedDatasetMode"
+    },
+    "RunCuratedHiggsGlueETL": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "${CuratedHiggsGlueJobName}",
+        "Arguments": {
+          "--dataset_mode.$": "$.dataset_mode",
+          "--run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "--s3_bucket.$": "$.s3_bucket",
+          "--s3_prefix.$": "$.s3_prefix",
+          "--total_rows.$": "$.total_rows"
+        }
+      },
+      "ResultPath": "$.etl_result",
+      "Next": "ValidateCuratedDataset",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "RunRealCernExtractionTask": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "Cluster": "${EcsClusterArn}",
+        "TaskDefinition": "${RealCernExtractionTaskDefinitionArn}",
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["${SubnetId1}", "${SubnetId2}"],
+            "SecurityGroups": ["${SecurityGroupId}"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "colliderops-ai",
+              "Command": ["python", "-m", "etl.real_cern_etl_job"],
+              "Environment": [
+                {
+                  "Name": "COLLIDEROPS_STORAGE_MODE",
+                  "Value": "s3"
+                },
+                {
+                  "Name": "COLLIDEROPS_DATASET_MODE",
+                  "Value.$": "$.dataset_mode"
+                },
+                {
+                  "Name": "COLLIDEROPS_RUN_ID",
+                  "Value.$": "$.validate_pipeline_request_result.Payload.run_id"
+                },
+                {
+                  "Name": "COLLIDEROPS_S3_BUCKET",
+                  "Value.$": "$.s3_bucket"
+                },
+                {
+                  "Name": "COLLIDEROPS_S3_PREFIX",
+                  "Value.$": "$.s3_prefix"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "ResultPath": "$.etl_result",
+      "Next": "ValidateCuratedDataset",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "ValidateCuratedDataset": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ValidateCuratedDatasetLambdaArn}",
+        "Payload": {
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix"
+        }
+      },
+      "ResultPath": "$.validate_curated_dataset_result",
+      "Next": "RunTrainingTask",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "RunTrainingTask": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "Cluster": "${EcsClusterArn}",
+        "TaskDefinition": "${TrainingTaskDefinitionArn}",
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["${SubnetId1}", "${SubnetId2}"],
+            "SecurityGroups": ["${SecurityGroupId}"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "colliderops-ai",
+              "Command.$": "States.Array('python', '-m', 'training.train', '--dataset-mode', $.dataset_mode)",
+              "Environment": [
+                {
+                  "Name": "COLLIDEROPS_STORAGE_MODE",
+                  "Value": "s3"
+                },
+                {
+                  "Name": "COLLIDEROPS_DATASET_MODE",
+                  "Value.$": "$.dataset_mode"
+                },
+                {
+                  "Name": "COLLIDEROPS_RUN_ID",
+                  "Value.$": "$.validate_pipeline_request_result.Payload.run_id"
+                },
+                {
+                  "Name": "COLLIDEROPS_S3_BUCKET",
+                  "Value.$": "$.s3_bucket"
+                },
+                {
+                  "Name": "COLLIDEROPS_S3_PREFIX",
+                  "Value.$": "$.s3_prefix"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "ResultPath": "$.training_result",
+      "Next": "RunEvaluationTask",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "RunEvaluationTask": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "Cluster": "${EcsClusterArn}",
+        "TaskDefinition": "${EvaluationTaskDefinitionArn}",
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["${SubnetId1}", "${SubnetId2}"],
+            "SecurityGroups": ["${SecurityGroupId}"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "colliderops-ai",
+              "Command.$": "States.Array('python', '-m', 'training.evaluate', '--dataset-mode', $.dataset_mode)",
+              "Environment": [
+                {
+                  "Name": "COLLIDEROPS_STORAGE_MODE",
+                  "Value": "s3"
+                },
+                {
+                  "Name": "COLLIDEROPS_DATASET_MODE",
+                  "Value.$": "$.dataset_mode"
+                },
+                {
+                  "Name": "COLLIDEROPS_RUN_ID",
+                  "Value.$": "$.validate_pipeline_request_result.Payload.run_id"
+                },
+                {
+                  "Name": "COLLIDEROPS_S3_BUCKET",
+                  "Value.$": "$.s3_bucket"
+                },
+                {
+                  "Name": "COLLIDEROPS_S3_PREFIX",
+                  "Value.$": "$.s3_prefix"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "ResultPath": "$.evaluation_result",
+      "Next": "CheckEvaluationGates",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "CheckEvaluationGates": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CheckEvaluationGatesLambdaArn}",
+        "Payload": {
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix"
+        }
+      },
+      "ResultPath": "$.evaluation_gate_result",
+      "Next": "DidEvaluationPass",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "DidEvaluationPass": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.evaluation_gate_result.Payload.passed",
+          "BooleanEquals": true,
+          "Next": "RegisterModelMetadata"
+        }
+      ],
+      "Default": "MarkRunRejected"
+    },
+    "RegisterModelMetadata": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${RegisterModelMetadataLambdaArn}",
+        "Payload": {
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix",
+          "evaluation_gate_result.$": "$.evaluation_gate_result.Payload"
+        }
+      },
+      "ResultPath": "$.register_model_metadata_result",
+      "Next": "PublishEvaluationSummary",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "PublishEvaluationSummary": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${PublishEvaluationSummaryLambdaArn}",
+        "Payload": {
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix"
+        }
+      },
+      "ResultPath": "$.publish_evaluation_summary_result",
+      "Next": "NotifySuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyFailure"
+        }
+      ]
+    },
+    "MarkRunRejected": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${MarkRunRejectedLambdaArn}",
+        "Payload": {
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix",
+          "evaluation_gate_result.$": "$.evaluation_gate_result.Payload"
+        }
+      },
+      "ResultPath": "$.mark_run_rejected_result",
+      "Next": "NotifyFailure"
+    },
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${NotifyPipelineStatusLambdaArn}",
+        "Payload": {
+          "status": "success",
+          "dataset_mode.$": "$.dataset_mode",
+          "run_id.$": "$.validate_pipeline_request_result.Payload.run_id",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix"
+        }
+      },
+      "End": true
+    },
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${NotifyPipelineStatusLambdaArn}",
+        "Payload": {
+          "status": "failed",
+          "dataset_mode.$": "$.dataset_mode",
+          "s3_bucket.$": "$.s3_bucket",
+          "s3_prefix.$": "$.s3_prefix",
+          "error.$": "$.error"
+        }
+      },
+      "End": true
+    },
+    "UnsupportedDatasetMode": {
+      "Type": "Fail",
+      "Error": "UnsupportedDatasetMode",
+      "Cause": "dataset_mode must be one of sample_collider, real_cern, or curated_higgs."
+    }
+  }
+}
