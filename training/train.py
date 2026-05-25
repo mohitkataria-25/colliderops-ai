@@ -4,7 +4,7 @@ from typing import Any
 
 import joblib
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 
 from training import feature_engineering
@@ -107,6 +107,23 @@ def train_randomforest_classifier(
     model.fit(X=x_train, y=y_train)
     return model
 
+def train_hist_gradient_boosting_classifier(
+  x_train: pd.DataFrame,
+  y_train: pd.Series,      
+)-> HistGradientBoostingClassifier:
+    
+    """ Train a Hist gradient boosting baseline model. """
+    print("Starting training for Hist gradient boosting model.")
+    model=HistGradientBoostingClassifier (
+           random_state=RANDOM_STATE,
+           learning_rate=0.1,
+           max_iter=200
+    )
+
+    model.fit(X=x_train, y=y_train)
+    return model
+
+    
 
 """
 def train_xgboost_classifier(x_train, y_train) -> XGBClassifier:
@@ -199,13 +216,18 @@ def main() -> None:
             x_train=x_train,
             y_train=y_train,
         )
-        # xgboost_model = train_xgboost_classifier(x_train=x_train, y_train=y_train)
 
+        # xgboost_model = train_xgboost_classifier(x_train=x_train, y_train=y_train)
+        hist_Gradient_boosting_model = train_hist_gradient_boosting_classifier(
+            x_train=x_train,
+            y_train=y_train,
+        )
         print(f"Base models generated, saving models at {MODEL_DIR}")
 
         save_model(logistic_model, f"logistic_regression_{dataset_mode}")
         save_model(random_forest_model, f"random_forest_{dataset_mode}")
-        # save_model(xgboost_model, f"xgboost_{dataset_mode}")
+        save_model(hist_Gradient_boosting_model, f"hist_gradient_boosting_{dataset_mode}")
+        
 
 
 if __name__ == "__main__":
