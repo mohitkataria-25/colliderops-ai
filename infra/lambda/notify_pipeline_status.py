@@ -13,6 +13,7 @@ import json
 import os
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote_plus
 
 import boto3
 from botocore.exceptions import ClientError
@@ -20,6 +21,7 @@ from botocore.exceptions import ClientError
 
 DEFAULT_S3_PREFIX = "dev"
 SNS_TOPIC_ARN_ENV_VAR = "COLLIDEROPS_SNS_TOPIC_ARN"
+WRITE_NOTIFICATION_TO_S3_ENV_VAR = "COLLIDEROPS_WRITE_NOTIFICATION_TO_S3"
 VALID_STATUSES = {"success", "failed", "rejected"}
 
 
@@ -103,6 +105,54 @@ def build_subject(message: dict[str, Any]) -> str:
     return f"ColliderOpsAI pipeline {status}: {dataset_mode}"
 
 
+def build_notification_key(message: dict[str, Any]) -> str:
+    """Build the S3 key for a notification audit record."""
+    s3_prefix = normalize_prefix(str(message.get("s3_prefix", DEFAULT_S3_PREFIX)))
+    dataset_mode = str(message.get("dataset_mode", "unknown")).strip() or "unknown"
+    run_id = str(message.get("run_id", "unknown")).strip() or "unknown"
+    status = str(message.get("status", "unknown")).strip() or "unknown"
+    notified_at = str(message.get("notified_at", datetime.now(timezone.utc).isoformat()))
+    safe_notified_at = quote_plus(notified_at)
+
+    return (
+        f"{s3_prefix}/notifications/{dataset_mode}/{run_id}/"
+        f"{status}_{safe_notified_at}.json"
+    )
+
+
+def write_notification_to_s3_if_configured(message: dict[str, Any]) -> str | None:
+    """Write notification payload to S3 when enabled.
+
+    Local runs and Step Functions can use this as an audit trail before SNS is
+    configured. Set COLLIDEROPS_WRITE_NOTIFICATION_TO_S3=true to enable it.
+    """
+    should_write = os.getenv(WRITE_NOTIFICATION_TO_S3_ENV_VAR, "false").strip().lower()
+    if should_write not in {"1", "true", "yes"}:
+        return None
+
+    s3_bucket = str(message.get("s3_bucket", "")).strip()
+    if not s3_bucket or s3_bucket == "unknown":
+        raise NotifyPipelineStatusError(
+            "Cannot write notification to S3 because s3_bucket is missing."
+        )
+
+    notification_key = build_notification_key(message=message)
+    s3_client = boto3.client("s3")
+    try:
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=notification_key,
+            Body=json.dumps(message, indent=2).encode("utf-8"),
+            ContentType="application/json",
+        )
+    except ClientError as error:
+        raise NotifyPipelineStatusError(
+            f"Failed to write notification to s3://{s3_bucket}/{notification_key}: {error}"
+        ) from error
+
+    return f"s3://{s3_bucket}/{notification_key}"
+
+
 def publish_to_sns_if_configured(message: dict[str, Any]) -> str | None:
     """Publish the notification to SNS when a topic ARN is configured."""
     topic_arn = os.getenv(SNS_TOPIC_ARN_ENV_VAR)
@@ -132,11 +182,13 @@ def notify_pipeline_status(event: dict[str, Any]) -> dict[str, Any]:
     # even when SNS is not configured yet.
     print(json.dumps(message, indent=2))
 
+    notification_s3_uri = write_notification_to_s3_if_configured(message=message)
     sns_message_id = publish_to_sns_if_configured(message=message)
 
     return {
         "notified": True,
         "notification": message,
+        "notification_s3_uri": notification_s3_uri,
         "sns_message_id": sns_message_id,
     }
 
@@ -171,11 +223,11 @@ if __name__ == "__main__":
         "status": "success",
         "dataset_mode": "curated_higgs",
         "run_id": "curated_higgs-local-test",
-        "s3_bucket": "colliderops-ai-dev",
+        "s3_bucket": "colliderops-ai-dev-ap-southeast-2",
         "s3_prefix": "dev",
         "model_name": "hist_gradient_boosting_curated_higgs",
         "best_f1_score": 0.700,
         "best_roc_auc_score": 0.786,
-        "evaluation_summary_uri": "s3://colliderops-ai-dev/dev/evaluation/latest/curated_higgs/evaluation_summary.md",
+        "evaluation_summary_uri": "s3://colliderops-ai-dev-ap-southeast-2/dev/evaluation/curated_higgs/curated_higgs-local-test/evaluation_summary.md",
     }
     print(json.dumps(lambda_handler(sample_event, None), indent=2))

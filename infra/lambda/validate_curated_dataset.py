@@ -331,7 +331,7 @@ if __name__ == "__main__":
     sample_event = {
         "dataset_mode": "curated_higgs",
         "run_id": "curated_higgs-local-test",
-        "s3_bucket": "colliderops-ai-dev",
+        "s3_bucket": "colliderops-ai-dev-ap-southeast-2",
         "s3_prefix": "dev",
     }
     print(json.dumps(lambda_handler(sample_event, None), indent=2))
