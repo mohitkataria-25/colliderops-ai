@@ -1,40 +1,52 @@
+# Python
 .venv/
-venv/
-env/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
 
-.git/
-.vscode/
-.idea/
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS
 .DS_Store
 
-data/
-datasets/
+# MLflow local tracking artifacts
+mlruns/
+mlflow.db
+
+# RAG / vector stores
+rag/vector_store/
+*.sqlite3
+*.sqlite
+*.db
+
+# Local model/data artifacts
+models/
 artifacts/
 outputs/
-models/
-evaluation/
 reports/
-notebooks/
-*.ipynb
+evaluation_reports/
+evaluation_metrics/
 
-*.csv
-*.csv.gz
+# Data files / generated datasets
+data/raw/
+data/processed/
+data/curated/
 *.parquet
+*.csv.gz
+
+# Serialized model files
 *.joblib
 *.pkl
 *.pickle
-*.onnx
-*.pt
-*.pth
-*.bin
 
-.aws/
-.env
-.env.*
-*.pem
-*.key
+# Spark / Glue local temp artifacts
+.spark-warehouse/
+metastore_db/
+derby.log
+
+# Logs
+*.log
+logs/
