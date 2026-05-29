@@ -1,0 +1,51 @@
+# Python environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Git / IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Local data and generated artifacts
+data/
+datasets/
+artifacts/
+outputs/
+models/
+evaluation/
+reports/
+notebooks/
+*.ipynb
+
+# Large ML/data files
+*.csv
+*.csv.gz
+*.parquet
+*.joblib
+*.pkl
+*.pickle
+*.onnx
+*.pt
+*.pth
+*.bin
+
+# AWS/local config - never bake credentials into image
+.aws/
+.env
+.env.*
+*.pem
+*.key
+
+# Docker/build noise
+docker-compose*.yml

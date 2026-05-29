@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/mohitkataria/Documents/Projects/colliderops-ai/mlruns/371855752230724883/be7dbdb8a0f149ed84f3e25a661ffee4/artifacts
+end_time: 1779610566448
+entry_point_name: ''
+experiment_id: '371855752230724883'
+lifecycle_stage: active
+run_id: be7dbdb8a0f149ed84f3e25a661ffee4
+run_name: evaluate_baseline_models_real_cern
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1779610566414
+status: 3
+tags: []
+user_id: mohitkataria

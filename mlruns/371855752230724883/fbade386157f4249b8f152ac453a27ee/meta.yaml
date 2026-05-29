@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/mohitkataria/Documents/Projects/colliderops-ai/mlruns/371855752230724883/fbade386157f4249b8f152ac453a27ee/artifacts
+end_time: 1779129036154
+entry_point_name: ''
+experiment_id: '371855752230724883'
+lifecycle_stage: active
+run_id: fbade386157f4249b8f152ac453a27ee
+run_name: training_baseline_models
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1779129036151
+status: 4
+tags: []
+user_id: mohitkataria

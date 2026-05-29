@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/mohitkataria/Documents/Projects/colliderops-ai/mlruns/371855752230724883/9358016f4c8141fb9b75dcf6c5c8a1d3/artifacts
+end_time: 1779678347434
+entry_point_name: ''
+experiment_id: '371855752230724883'
+lifecycle_stage: active
+run_id: 9358016f4c8141fb9b75dcf6c5c8a1d3
+run_name: training_baseline_models_curated_higgs
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1779678345358
+status: 3
+tags: []
+user_id: mohitkataria

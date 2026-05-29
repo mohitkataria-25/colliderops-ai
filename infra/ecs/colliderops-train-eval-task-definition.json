@@ -1,0 +1,42 @@
+{
+  "family": "colliderops-ai-train-eval",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "8192",
+  "executionRoleArn": "arn:aws:iam::257212470159:role/colliderops-ai-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::257212470159:role/colliderops-ai-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "colliderops-ai-train-eval",
+      "image": "257212470159.dkr.ecr.ap-southeast-2.amazonaws.com/colliderops-ai-train-eval:latest",
+      "essential": true,
+      "environment": [
+        {
+          "name": "COLLIDEROPS_S3_BUCKET",
+          "value": "colliderops-ai-dev-ap-southeast-2"
+        },
+        {
+          "name": "COLLIDEROPS_S3_PREFIX",
+          "value": "dev"
+        },
+        {
+          "name": "COLLIDEROPS_DATASET_MODE",
+          "value": "curated_higgs"
+        },
+        {
+          "name": "AWS_DEFAULT_REGION",
+          "value": "ap-southeast-2"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/colliderops-ai-train-eval",
+          "awslogs-region": "ap-southeast-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
